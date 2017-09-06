@@ -251,3 +251,6 @@ paket-files/
 /nuget/Imaging.Library.1.0.0.nupkg
 /nuget/Imaging.Library.1.1.0.nupkg
 /nuget/Imaging.Library.1.1.1.nupkg
+
+StoneagePublisher.Web/App_Data/
+src/StoneagePublisher.Web/App_Data/
