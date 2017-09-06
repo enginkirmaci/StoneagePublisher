@@ -25,6 +25,8 @@ namespace StoneagePublisher.Web
                     StringComparison.InvariantCultureIgnoreCase,
                     true,
                     "application/json"));
+
+            config.Formatters.Add(new BsonMediaTypeFormatter());
         }
     }
 }

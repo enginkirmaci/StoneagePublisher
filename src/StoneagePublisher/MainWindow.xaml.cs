@@ -1,14 +1,16 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Threading;
 using StoneagePublisher.ClassLibrary;
 using StoneagePublisher.ClassLibrary.Entities;
 using StoneagePublisher.ClassLibrary.Services;
+using System.Net.Http.Formatting;
+using System.Threading;
 
 namespace StoneagePublisher
 {
@@ -30,6 +32,25 @@ namespace StoneagePublisher
             Profiles.ItemsSource = Configuration.Profiles;
             SelectProfile(null);
             compressionService = new CompressionService();
+
+            Task.Run((Action) CheckHealth);
+        }
+
+        private void CheckHealth()
+        {
+            try
+            {
+                using (var client = new HttpClient())
+                {
+                    client.BaseAddress = new Uri(Configuration.PublishWebsiteUrl);
+                    var result = client.GetStringAsync("/api/publish/health").Result;
+                    SetStatus(result);
+                }
+            }
+            catch (Exception e)
+            {
+                SetStatus(FormattableString.Invariant($"Health check failed : {e.Message}"));
+            }
         }
 
         private void SelectProfile(string name)
@@ -73,18 +94,24 @@ namespace StoneagePublisher
             {
                 using (var client = new HttpClient())
                 {
-                    var base64String = Convert.ToBase64String(bytes);
                     client.BaseAddress = new Uri(Configuration.PublishWebsiteUrl);
-                    var content = new FormUrlEncodedContent(new[]
+                    client.Timeout = Timeout.InfiniteTimeSpan;
+                    client.DefaultRequestHeaders.Accept.Add(
+                        new MediaTypeWithQualityHeaderValue("application/bson"));
+                    
+                    var load = new
                     {
-                        new KeyValuePair<string, string>("WebRootPath", webrootPath),
-                        new KeyValuePair<string, string>("Bytes", base64String) 
-                    });
+                        WebRootPath = webrootPath,
+                        Bytes = bytes
+                    };
 
-                    var result = client.PostAsync(Configuration.PublishWebsitePath, content).Result;
+                    MediaTypeFormatter bsonFormatter = new BsonMediaTypeFormatter();
+
+                    var result = client.PostAsync(Configuration.PublishWebsitePath, load, bsonFormatter).Result;
+
                     var resultContent = result.Content.ReadAsStringAsync().Result;
                     //TODO
-                    Console.WriteLine(resultContent);
+                    SetStatus(resultContent);
                 }
 
                 SetStatus(Environment.NewLine + "Upload done.");

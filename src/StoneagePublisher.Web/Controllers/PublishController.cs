@@ -45,7 +45,7 @@ namespace StoneagePublisher.Web.Controllers
             Logger.Info(FormattableString.Invariant($"Received publish request for {model.WebRootPath}"));
             var stopwatch = new Stopwatch();
             stopwatch.Start();
-
+            //var bytes = Convert.FromBase64String(model.Bytes);
             var stream = new MemoryStream(model.Bytes);
             var rootPath = ConfigurationManager.AppSettings[SettingKeys.ProjectsRootFolder];
             var outputPath = Path.Combine(rootPath, model.WebRootPath);
