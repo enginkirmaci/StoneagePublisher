@@ -126,6 +126,7 @@
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
     </None>
+    <None Include="PublishProfiles.json" />
     <None Include="StoneagePublisher_TemporaryKey.pfx" />
   </ItemGroup>
   <ItemGroup>
