@@ -1,42 +1,112 @@
-﻿<Window x:Class="StoneagePublisher.MainWindow"
-        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:StoneagePublisher"
-        mc:Ignorable="d"
-        Title="Stoneage Publisher" Height="300" Width="400" DataContext="{Binding RelativeSource={RelativeSource Self}}">
-    <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"></RowDefinition>
-            <RowDefinition></RowDefinition>
-        </Grid.RowDefinitions>
+﻿<Window
+    x:Class="StoneagePublisher.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:local="clr-namespace:StoneagePublisher"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:vm="clr-namespace:StoneagePublisher.ViewModels"
+    Title="Stoneage Publisher"
+    Width="600"
+    Height="480"
+    d:DataContext="{d:DesignInstance {x:Type vm:MainViewModel},
+                                     IsDesignTimeCreatable=True}"
+    FontFamily="Segoe UI Symbol"
+    FontSize="13"
+    mc:Ignorable="d">
+    <Grid Margin="5">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition />
+            <ColumnDefinition Width="3*" />
+        </Grid.ColumnDefinitions>
+
         <Grid>
             <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"></RowDefinition>
-                <RowDefinition Height="Auto"></RowDefinition>
+                <RowDefinition Height="Auto" />
+                <RowDefinition />
+                <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto"></ColumnDefinition>
-                    <ColumnDefinition></ColumnDefinition>
-                </Grid.ColumnDefinitions>
-                <Grid.RowDefinitions>
-                    <RowDefinition></RowDefinition>
-                    <RowDefinition></RowDefinition>
-                    <RowDefinition></RowDefinition>
-                </Grid.RowDefinitions>
-                <Label Content="Profile"></Label>
-                <ComboBox x:Name="Profiles" Grid.Column="1" Margin="0,5" DisplayMemberPath="Name" SelectionChanged="Profiles_SelectionChanged"></ComboBox>
-                <Label Content="Folder Path"  Grid.Row="1"></Label>
-                <TextBox x:Name="LocalFolderPath" Grid.Column="1" Margin="0,5"  Grid.Row="1"></TextBox>
-                <Label Content="Ftp" Grid.Row="2"></Label>
-                <TextBox x:Name="FtpPath" Grid.Column="1" Margin="0,5" Grid.Row="2"></TextBox>
-            </Grid>
-            <Button Content="Zip &amp; Send" Grid.Row="1" Margin="0,5" Click="ZipSend_Click" />
+
+            <Label Content="Profiles" FontWeight="Bold" />
+            <ListBox
+                Grid.Row="1"
+                DisplayMemberPath="Name"
+                ItemsSource="{Binding Profiles}"
+                SelectedItem="{Binding SelectedProfile, Mode=TwoWay}" />
         </Grid>
-        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
-            <Label x:Name="Status"></Label>
-        </ScrollViewer>
+        <Grid Grid.Column="1" Margin="5,0,0,0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition />
+            </Grid.RowDefinitions>
+
+            <StackPanel>
+                <Label
+                    Content="{Binding SelectedProfile.Name}"
+                    FontFamily="Segoe UI Light"
+                    FontSize="24" />
+                <Label Content="Publish Settings" FontWeight="Bold" />
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition />
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition />
+                        <RowDefinition />
+                    </Grid.RowDefinitions>
+
+                    <Label Content="Local Publish Folder" />
+                    <TextBox
+                        Grid.Column="1"
+                        Margin="0,2"
+                        Text="{Binding SelectedProfile.LocalPublishFolder}" />
+
+                    <Label Grid.Row="1" Content="Remote Publish Folder" />
+                    <TextBox
+                        Grid.Row="1"
+                        Grid.Column="1"
+                        Margin="0,2"
+                        Text="{Binding SelectedProfile.RemotePublishFolder}" />
+                </Grid>
+                <Label Content="Other Settings" FontWeight="Bold" />
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition />
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition />
+                        <RowDefinition />
+                    </Grid.RowDefinitions>
+
+                    <Label Content="Publish Website Url" />
+                    <TextBox
+                        Grid.Column="1"
+                        Margin="0,2"
+                        Text="{Binding Configuration.PublishWebsiteUrl}" />
+
+                    <Label Grid.Row="1" Content="Publish Website Path" />
+                    <TextBox
+                        Grid.Row="1"
+                        Grid.Column="1"
+                        Margin="0,2"
+                        Text="{Binding Configuration.PublishWebsitePath}" />
+                </Grid>
+                <StackPanel HorizontalAlignment="Right" Orientation="Horizontal">
+                    <Button
+                        Margin="0,2"
+                        Padding="8,4"
+                        Command="{Binding ZipSendCommand}"
+                        Content="Zip &amp; Send" />
+                </StackPanel>
+            </StackPanel>
+            <ScrollViewer
+                Grid.Row="3"
+                Grid.ColumnSpan="2"
+                VerticalScrollBarVisibility="Auto">
+                <Label Content="{Binding Status}" />
+            </ScrollViewer>
+        </Grid>
     </Grid>
 </Window>
