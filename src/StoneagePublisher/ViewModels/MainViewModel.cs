@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -113,13 +115,28 @@ namespace StoneagePublisher.ViewModels
 
             Task.Run(() =>
             {
-                var startDate = DateTime.Now;
-                SetStatus("Status" + Environment.NewLine + "----------------", false);
-                SetStatus(Environment.NewLine + "Zip started.");
+                SetStatus("Status");
+                SetStatus($"---------------- {DateTime.Now}");
+                var rawSize = GetInMb(GetDirectorySize(folderPath));
+                SetStatus("Initial folder size: " + rawSize.ToString("F") + " mb. ");
+
+                SetStatus("Zip started.");
+                var stopwatch = new Stopwatch();
+                stopwatch.Start();
                 var bytes = compressionService.GetZippedBytes(folderPath);
-                SetStatus(Environment.NewLine + "Upload started");
+                var size = GetInMb(bytes.Length);
+                SetStatus($"Zipping Done in {stopwatch.Elapsed}, Size: {size:F} mb. ");
+
+                SetStatus("Upload started");
+                var uploadStopwatch = new Stopwatch();
+                uploadStopwatch.Start();
                 HttpPost(SelectedProfile.RemotePublishFolder, bytes);
-                SetStatus(Environment.NewLine + $"Duration: {DateTime.Now.Subtract(startDate)}", false);
+
+                SetStatus($"Upload done in {uploadStopwatch.Elapsed}");
+                
+                SetStatus($"Total Duration: {stopwatch.Elapsed}");
+                uploadStopwatch.Stop();
+                stopwatch.Stop();
                 _canExecute = true;
             });
         }
@@ -145,13 +162,13 @@ namespace StoneagePublisher.ViewModels
 
                     var result = client.PostAsync(Configuration.PublishWebsitePath, load, bsonFormatter).Result;
 
-                    if (result == null && result.IsSuccessStatusCode)
+                    if (result != null && result.IsSuccessStatusCode)
                     {
                         SetStatus(Environment.NewLine + "Upload and Publish done.");
                     }
                     else
                     {
-                        var resultContent = result.Content.ReadAsStringAsync().Result;
+                        var resultContent = result?.Content.ReadAsStringAsync().Result;
 
                         SetStatus(Environment.NewLine + "Upload failed.");
                         SetStatus(Environment.NewLine + resultContent);
@@ -170,17 +187,28 @@ namespace StoneagePublisher.ViewModels
             }
         }
 
-        public void SetStatus(string message, bool appendDate = true)
+        public void SetStatus(string message)
         {
             Dispatcher.CurrentDispatcher.Invoke(() =>
             {
-                Status += appendDate ? $"{DateTime.Now} : {message}" : message;
+                Status += $"{message}{Environment.NewLine}";
                 RaisePropertyChanged("Status");
             });
+        }
+
+
+        static long GetDirectorySize(string path)
+        {
+            var directoryInfo = new DirectoryInfo(path);
+            var infoList = directoryInfo.GetFiles("*.*", SearchOption.AllDirectories);
+            return infoList.Select(x => x.Length).Sum();
         }
 
         public event PropertyChangedEventHandler PropertyChanged;
 
         private void RaisePropertyChanged(string PropertyName) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(PropertyName));
+
+        private float GetInMb(int byteLength) => (float)byteLength / (1024 * 1024);
+        private float GetInMb(long byteLength) => (float)byteLength / (1024 * 1024);
     }
 }

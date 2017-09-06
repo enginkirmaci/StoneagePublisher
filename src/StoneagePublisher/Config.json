@@ -1,7 +1,12 @@
 ﻿{
-  "PublishWebsiteUrl": "http://localhost:62734",
+  "PublishWebsiteUrl": "http://publisher.local.reference.be",
   "PublishWebsitePath": "/api/publish/handlepublish",
   "Profiles": [
+    {
+      "Name": "Test",
+      "LocalPublishFolder": "D:\\tmp\\Test",
+      "RemotePublishFolder": "Music"
+    },
     {
       "Name": "Makro.Webshop",
       "LocalPublishFolder": "D:\\WebSite",
@@ -11,11 +16,6 @@
       "Name": "Makro.Webshop2",
       "LocalPublishFolder": "D:\\WebSite2",
       "RemotePublishFolder": "Makro\\Website-Shop81"
-    },
-    {
-      "Name": "Test",
-      "LocalPublishFolder": "D:\\tmp\\Test",
-      "RemotePublishFolder": "Music"
     }
   ]
 }

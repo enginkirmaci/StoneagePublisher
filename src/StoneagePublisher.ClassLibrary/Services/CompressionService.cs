@@ -91,7 +91,7 @@ namespace StoneagePublisher.ClassLibrary.Services
                 var memoryStream = new MemoryStream();
                 var zipStream = new ZipOutputStream(memoryStream);
 
-                zipStream.SetLevel(3); //0-9, 9 being the highest level of compression
+                zipStream.SetLevel(6); //0-9, 9 being the highest level of compression
 
                 // This setting will strip the leading part of the folder path in the entries, to
                 // make the entries relative to the starting folder.
