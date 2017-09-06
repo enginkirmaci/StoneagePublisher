@@ -70,7 +70,6 @@
       <HintPath>..\packages\SharpZipLib.0.86.0\lib\20\ICSharpCode.SharpZipLib.dll</HintPath>
     </Reference>
     <Reference Include="System" />
-    <Reference Include="System.Configuration" />
     <Reference Include="System.Data" />
     <Reference Include="System.Xml" />
     <Reference Include="Microsoft.CSharp" />
@@ -126,11 +125,10 @@
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
     </None>
-    <None Include="PublishProfiles.json" />
+    <None Include="Config.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="StoneagePublisher_TemporaryKey.pfx" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
     <BootstrapperPackage Include=".NETFramework,Version=v4.6.2">
@@ -146,6 +144,12 @@
   </ItemGroup>
   <ItemGroup>
     <Resource Include="publish.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\StoneagePublisher.ClassLibrary\StoneagePublisher.ClassLibrary.csproj">
+      <Project>{D56F59FF-0BE3-44E7-8E49-3ABB913D78E4}</Project>
+      <Name>StoneagePublisher.ClassLibrary</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

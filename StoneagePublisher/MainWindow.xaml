@@ -11,51 +11,30 @@
             <RowDefinition Height="Auto"></RowDefinition>
             <RowDefinition></RowDefinition>
         </Grid.RowDefinitions>
-        <TabControl x:Name="TabControl">
-            <TabItem Header="Local">
-                <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"></RowDefinition>
-                        <RowDefinition Height="Auto"></RowDefinition>
-                    </Grid.RowDefinitions>
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"></ColumnDefinition>
-                            <ColumnDefinition></ColumnDefinition>
-                        </Grid.ColumnDefinitions>
-                        <Grid.RowDefinitions>
-                            <RowDefinition></RowDefinition>
-                            <RowDefinition></RowDefinition>
-                        </Grid.RowDefinitions>
-                        <Label Content="Folder Path"></Label>
-                        <TextBox x:Name="LocalFolderPath" Grid.Column="1" Margin="0,5"></TextBox>
-                        <Label Content="Ftp" Grid.Row="1"></Label>
-                        <TextBox x:Name="FtpPath" Grid.Column="1" Margin="0,5" Grid.Row="1"></TextBox>
-                    </Grid>
-                    <Button Content="Zip &amp; Send" Grid.Row="1" Margin="0,5" Click="ZipSend_Click" />
-                </Grid>
-            </TabItem>
-            <TabItem Header="Remote">
-                <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"></RowDefinition>
-                        <RowDefinition Height="Auto"></RowDefinition>
-                    </Grid.RowDefinitions>
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"></ColumnDefinition>
-                            <ColumnDefinition></ColumnDefinition>
-                        </Grid.ColumnDefinitions>
-                        <Grid.RowDefinitions>
-                            <RowDefinition></RowDefinition>
-                        </Grid.RowDefinitions>
-                        <Label Content="Folder Path"></Label>
-                        <TextBox x:Name="RemoteFolderPath" Grid.Column="1" Margin="0,5"></TextBox>
-                    </Grid>
-                    <Button Content="UnZip" Grid.Row="1" Margin="0,5"  Click="UnZip_Click" />
-                </Grid>
-            </TabItem>
-        </TabControl>
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"></RowDefinition>
+                <RowDefinition Height="Auto"></RowDefinition>
+            </Grid.RowDefinitions>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"></ColumnDefinition>
+                    <ColumnDefinition></ColumnDefinition>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition></RowDefinition>
+                    <RowDefinition></RowDefinition>
+                    <RowDefinition></RowDefinition>
+                </Grid.RowDefinitions>
+                <Label Content="Profile"></Label>
+                <ComboBox x:Name="Profiles" Grid.Column="1" Margin="0,5" DisplayMemberPath="Name" SelectionChanged="Profiles_SelectionChanged"></ComboBox>
+                <Label Content="Folder Path"  Grid.Row="1"></Label>
+                <TextBox x:Name="LocalFolderPath" Grid.Column="1" Margin="0,5"  Grid.Row="1"></TextBox>
+                <Label Content="Ftp" Grid.Row="2"></Label>
+                <TextBox x:Name="FtpPath" Grid.Column="1" Margin="0,5" Grid.Row="2"></TextBox>
+            </Grid>
+            <Button Content="Zip &amp; Send" Grid.Row="1" Margin="0,5" Click="ZipSend_Click" />
+        </Grid>
         <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
             <Label x:Name="Status"></Label>
         </ScrollViewer>

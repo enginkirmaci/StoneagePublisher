@@ -1,13 +1,14 @@
 ﻿using System;
-using System.ComponentModel;
-using System.Configuration;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Threading;
 using ICSharpCode.SharpZipLib.Core;
 using ICSharpCode.SharpZipLib.Zip;
+using StoneagePublisher.ClassLibrary;
+using StoneagePublisher.ClassLibrary.Entities;
 
 namespace StoneagePublisher
 {
@@ -16,28 +17,26 @@ namespace StoneagePublisher
     /// </summary>
     public partial class MainWindow : Window
     {
-        private const string ZipFileName = "publish.zip";
+        private Configuration Configuration { get; set; }
+        public Profile SelectedProfile { get; set; }
 
         public MainWindow()
         {
             InitializeComponent();
 
-            LocalFolderPath.Text = ConfigurationManager.AppSettings.Get("LocalFolderPath");
-            FtpPath.Text = ConfigurationManager.AppSettings.Get("FtpPath");
-            RemoteFolderPath.Text = ConfigurationManager.AppSettings.Get("RemoteFolderPath");
-            TabControl.SelectedIndex = ConfigurationManager.AppSettings.Get("Envirenmont") == "Remote" ? 1 : 0;
+            Configuration = Utils.ReadConfiguration();
+            Profiles.ItemsSource = Configuration.Profiles;
+            SelectProfile(null);
         }
 
-        protected override void OnClosing(CancelEventArgs e)
+        private void SelectProfile(string name)
         {
-            base.OnClosing(e);
+            var profile = !string.IsNullOrWhiteSpace(name) ? Configuration.Profiles.FirstOrDefault(i => i.Name == name) : Configuration.Profiles.FirstOrDefault();
 
-            var config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
-            config.AppSettings.Settings["LocalFolderPath"].Value = LocalFolderPath.Text;
-            config.AppSettings.Settings["FtpPath"].Value = FtpPath.Text;
-            config.AppSettings.Settings["RemoteFolderPath"].Value = RemoteFolderPath.Text;
-            config.AppSettings.Settings["Envirenmont"].Value = TabControl.SelectedIndex == 1 ? "Remote" : "Local";
-            config.Save();
+            SelectedProfile = profile;
+            Profiles.SelectedValue = profile;
+            LocalFolderPath.Text = profile.LocalPublishFolder;
+            FtpPath.Text = profile.RemotePublishFolder;
         }
 
         public void SetStatus(string message, bool appendDate = true)
@@ -54,8 +53,14 @@ namespace StoneagePublisher
             var ftpPath = FtpPath.Text;
 
             var outputFolder = Environment.CurrentDirectory;
-            var outputFileName = ZipFileName;
+            var outputFileName = SelectedProfile.Name + ".zip";
             var outputFilePath = Path.Combine(outputFolder, outputFileName);
+
+            var request = new PublishRequest()
+            {
+                FileName = outputFileName,
+                WebRootPath = SelectedProfile.RemotePublishFolder
+            };
 
             Status.Content = string.Empty;
 
@@ -66,28 +71,56 @@ namespace StoneagePublisher
                 SetStatus(Environment.NewLine + "Zip started.");
                 CreatePublishZip(folderPath, outputFolder, outputFilePath);
                 SetStatus(Environment.NewLine + "Upload started");
-                Upload(ftpPath, outputFilePath, outputFileName);
+                HttpPost(ftpPath, outputFilePath, request);
                 SetStatus(Environment.NewLine + $"Duration: {DateTime.Now.Subtract(startDate).ToString()}", false);
             });
         }
 
-        private void UnZip_Click(object sender, RoutedEventArgs e)
+        private void HttpPost(string ftpPath, string outputFilePath, PublishRequest request)
         {
-            var folderPath = RemoteFolderPath.Text;
-            var filePath = Path.Combine(folderPath, ZipFileName);
-
-            Status.Content = string.Empty;
-
-            Task.Run(() =>
+            try
             {
-                var startDate = DateTime.Now;
-                SetStatus("Status" + Environment.NewLine + "----------------", false);
-                SetStatus(Environment.NewLine + "UnZip started.");
-                ExtractZipFile(filePath, folderPath);
-                File.Delete(filePath);
-                var duration = DateTime.Now.Subtract(startDate);
-                SetStatus(Environment.NewLine + $"Duration: {DateTime.Now.Subtract(startDate).ToString()}", false);
-            });
+                var fileInfo = new FileInfo(outputFilePath);
+                request.Bytes = new byte[fileInfo.Length];
+
+                using (var fs = fileInfo.OpenRead())
+                {
+                    fs.Read(request.Bytes, 0, Convert.ToInt32(fileInfo.Length));
+                }
+
+                WebRequest wbRequest = WebRequest.Create(Configuration.PublishWebsiteUrl + $"?webRootPath={request.WebRootPath}&filename={request.FileName}");
+                wbRequest.Method = "POST";
+                wbRequest.ContentType = "application/x-www-form-urlencoded";
+                wbRequest.ContentLength = request.Bytes.Length;
+
+                using (Stream stream = wbRequest.GetRequestStream())
+                {
+                    stream.Write(request.Bytes, 0, request.Bytes.Length);
+                }
+
+                string responseContent = null;
+
+                using (WebResponse response = wbRequest.GetResponse())
+                {
+                    using (Stream stream = response.GetResponseStream())
+                    {
+                        using (StreamReader streamReader = new StreamReader(stream))
+                        {
+                            responseContent = streamReader.ReadToEnd();
+                        }
+                    }
+                }
+
+                SetStatus(Environment.NewLine + "Upload done.");
+            }
+            catch (WebException e)
+            {
+                MessageBox.Show(e.Message.ToString());
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message.ToString());
+            }
         }
 
         public void ExtractZipFile(string archiveFilenameIn, string outFolder)
@@ -140,45 +173,6 @@ namespace StoneagePublisher
                     zf.IsStreamOwner = true; // Makes close also shut the underlying stream
                     zf.Close(); // Ensure we release resources
                 }
-            }
-        }
-
-        private void Upload(string ftpPath, string outputFilePath, string outputFileName)
-        {
-            try
-            {
-                FtpWebRequest request = (FtpWebRequest)WebRequest.Create(ftpPath + "/" + outputFileName);
-                request.UseBinary = true;
-                request.KeepAlive = false;
-                request.Method = WebRequestMethods.Ftp.UploadFile;
-                //request.Credentials = new NetworkCredential("maruthi", "******");
-
-                //Get physical file
-                FileInfo fi = new FileInfo(outputFilePath);
-                Byte[] contents = new Byte[fi.Length];
-
-                //Read file
-                FileStream fs = fi.OpenRead();
-                fs.Read(contents, 0, Convert.ToInt32(fi.Length));
-                fs.Close();
-
-                //Write file contents to FTP server
-                Stream rs = request.GetRequestStream();
-                rs.Write(contents, 0, Convert.ToInt32(fi.Length));
-                rs.Close();
-
-                FtpWebResponse response = request.GetResponse() as FtpWebResponse;
-                string statusDescription = response.StatusDescription;
-                response.Close();
-                SetStatus(Environment.NewLine + "Upload done.");
-            }
-            catch (WebException e)
-            {
-                MessageBox.Show(e.Message.ToString());
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.Message.ToString());
             }
         }
 
@@ -250,50 +244,13 @@ namespace StoneagePublisher
             }
         }
 
-        /*
-         private string RunScript(string scriptText)
-{
-    // create Powershell runspace
-
-    Runspace runspace = RunspaceFactory.CreateRunspace();
-
-    // open it
-
-    runspace.Open();
-
-    // create a pipeline and feed it the script text
-
-    Pipeline pipeline = runspace.CreatePipeline();
-    pipeline.Commands.AddScript(scriptText);
-
-    // add an extra command to transform the script
-    // output objects into nicely formatted strings
-
-    // remove this line to get the actual objects
-    // that the script returns. For example, the script
-
-    // "Get-Process" returns a collection
-    // of System.Diagnostics.Process instances.
-
-    pipeline.Commands.Add("Out-String");
-
-    // execute the script
-
-    Collection<psobject /> results = pipeline.Invoke();
-
-    // close the runspace
-
-    runspace.Close();
-
-    // convert the script result into a single string
-
-    StringBuilder stringBuilder = new StringBuilder();
-    foreach (PSObject obj in results)
-    {
-        stringBuilder.AppendLine(obj.ToString());
-    }
-
-    return stringBuilder.ToString();
-}*/
+        private void Profiles_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+        {
+            if (e.AddedItems.Count > 0)
+            {
+                var profile = e.AddedItems[0] as Profile;
+                SelectProfile(profile.Name);
+            }
+        }
     }
 }

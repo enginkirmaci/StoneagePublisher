@@ -1,0 +1,15 @@
+﻿{
+  "PublishWebsiteUrl": "10.10.6.21/publisher",
+  "Profiles": [
+    {
+      "Name": "Makro.Webshop",
+      "LocalPublishFolder": "D:\\WebSite",
+      "RemotePublishFolder": "\\Makro\\Website-Shop81"
+    },
+    {
+      "Name": "Makro.Webshop2",
+      "LocalPublishFolder": "D:\\WebSite2",
+      "RemotePublishFolder": "\\Makro\\Website-Shop81"
+    }
+  ]
+}
