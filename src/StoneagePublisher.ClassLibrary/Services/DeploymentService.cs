@@ -112,8 +112,10 @@ namespace StoneagePublisher.ClassLibrary.Services
         }
 
         private float GetInMb(int byteLength) => (float)byteLength / (1024 * 1024);
+
         private float GetInMb(long byteLength) => (float)byteLength / (1024 * 1024);
-        static long GetDirectorySize(string path)
+
+        private static long GetDirectorySize(string path)
         {
             var directoryInfo = new DirectoryInfo(path);
             var infoList = directoryInfo.GetFiles("*.*", SearchOption.AllDirectories);

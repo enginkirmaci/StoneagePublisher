@@ -1,21 +1,22 @@
 ﻿{
+  "IsAutoMode": true,
   "PublishWebsiteUrl": "http://publisher.local.reference.be",
   "PublishWebsitePath": "/api/publish/handlepublish",
   "Profiles": [
     {
       "Name": "Test",
-      "LocalPublishFolder": "D:\\tmp\\Test",
+      "LocalPublishFolder": "D:\\website-publish",
       "RemotePublishFolder": "Music"
     },
     {
       "Name": "Makro.Webshop",
-      "LocalPublishFolder": "D:\\WebSite",
-      "RemotePublishFolder": "Makro\\Website-Shop81"
+      "LocalPublishFolder": "D:\\website-publish\\Website-Shop81",
+      "RemotePublishFolder": "Website-Shop81"
     },
     {
       "Name": "Makro.Webshop2",
-      "LocalPublishFolder": "D:\\WebSite2",
-      "RemotePublishFolder": "Makro\\Website-Shop81"
+      "LocalPublishFolder": "D:\\website-publish\\Website-Sync81",
+      "RemotePublishFolder": "Website-Sync81"
     }
   ]
 }

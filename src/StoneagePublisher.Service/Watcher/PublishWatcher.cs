@@ -9,28 +9,45 @@ using StoneagePublisher.ClassLibrary.Services;
 
 namespace StoneagePublisher.Service.Watcher
 {
-    public class PublishWatcher
+    public class PublishWatcher : IDisposable
     {
         private readonly ILogService logService;
 
         //Miliseconds to wait to trigger a publish after a change in directory
         private const double TriggerWaitSeconds = 20000d;
+
         private const double PublishCheckFrequency = 5000d;
         private const int PercentagePrintFrequency = 5;
         private readonly ConfigurationProvider configurationProvider;
         private readonly DeploymentService deploymentService;
 
         private Dictionary<string, PublishWatchStatus> folderStatuses;
-        
+        private List<FileSystemWatcher> watchers;
         private readonly Timer timer;
         private int lastPrintedPercentage = 0;
 
         public PublishWatcher(ILogService logService)
         {
             this.logService = logService;
+            watchers = new List<FileSystemWatcher>();
             configurationProvider = new ConfigurationProvider();
             deploymentService = new DeploymentService(logService);
             deploymentService.ProgressChanged += DeploymentServiceOnProgressChanged;
+            timer = new Timer
+            {
+                Interval = PublishCheckFrequency
+            };
+
+            timer.Elapsed += TimerOnElapsed;
+        }
+
+        public PublishWatcher(ILogService logService, Action<HttpProgressEventArgs> progressChanged)
+        {
+            this.logService = logService;
+            watchers = new List<FileSystemWatcher>();
+            configurationProvider = new ConfigurationProvider();
+            deploymentService = new DeploymentService(logService);
+            deploymentService.ProgressChanged += progressChanged;
             timer = new Timer
             {
                 Interval = PublishCheckFrequency
@@ -83,6 +100,7 @@ namespace StoneagePublisher.Service.Watcher
 
             watcher.Changed += WatcherOnChanged;
             watcher.EnableRaisingEvents = true;
+            watchers.Add(watcher);
         }
 
         private void WatcherOnChanged(object sender, FileSystemEventArgs fileSystemEventArgs)
@@ -94,9 +112,9 @@ namespace StoneagePublisher.Service.Watcher
                 logService.Error($"Could not find profile for path {fileSystemEventArgs.FullPath}");
                 return;
             }
-            
+
             var status = folderStatuses[profile.LocalPublishFolder];
-            if (!status.LastUpdate.HasValue ||status.LastUpdate < DateTime.Now - TimeSpan.FromMilliseconds(TriggerWaitSeconds))
+            if (!status.LastUpdate.HasValue || status.LastUpdate < DateTime.Now - TimeSpan.FromMilliseconds(TriggerWaitSeconds))
             {
                 logService.Info($"Changes detected at path {profile.LocalPublishFolder}");
             }
@@ -143,6 +161,16 @@ namespace StoneagePublisher.Service.Watcher
                     }
                 }
             }
+        }
+
+        public void Dispose()
+        {
+            timer.Dispose();
+            watchers.ForEach(i =>
+            {
+                i.Dispose();
+                i = null;
+            });
         }
     }
 }
