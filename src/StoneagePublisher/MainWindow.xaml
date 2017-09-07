@@ -38,6 +38,7 @@
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
                 <RowDefinition />
+                <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
             <StackPanel>
@@ -101,12 +102,13 @@
                         Content="Zip &amp; Send" />
                 </StackPanel>
             </StackPanel>
-            <ScrollViewer
-                Grid.Row="3"
-                Grid.ColumnSpan="2"
-                VerticalScrollBarVisibility="Auto">
+            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
                 <Label Content="{Binding Status}" />
             </ScrollViewer>
+            <ProgressBar
+                Grid.Row="2"
+                Height="16"
+                Value="{Binding Progress}" />
         </Grid>
     </Grid>
 </Window>

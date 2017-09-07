@@ -7,6 +7,7 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Formatting;
+using System.Net.Http.Handlers;
 using System.Net.Http.Headers;
 using System.Threading;
 using System.Threading.Tasks;
@@ -51,11 +52,14 @@ namespace StoneagePublisher.ViewModels
 
         private bool _canExecute;
 
+        public int Progress { get; set; }
+
         public MainViewModel()
         {
             if (DesignerProperties.GetIsInDesignMode(new DependencyObject()))
             {
                 Status = "Status";
+                Progress = 35;
                 Configuration = new Configuration()
                 {
                     Profiles = new List<Profile>()
@@ -115,6 +119,7 @@ namespace StoneagePublisher.ViewModels
 
             Task.Run(() =>
             {
+                SetProgress(0);
                 SetStatus("Status");
                 SetStatus($"---------------- {DateTime.Now}");
                 var rawSize = GetInMb(GetDirectorySize(folderPath));
@@ -130,10 +135,12 @@ namespace StoneagePublisher.ViewModels
                 SetStatus("Upload started");
                 var uploadStopwatch = new Stopwatch();
                 uploadStopwatch.Start();
+
+                SetProgress(0);
                 HttpPost(SelectedProfile.RemotePublishFolder, bytes);
 
                 SetStatus($"Upload done in {uploadStopwatch.Elapsed}");
-                
+
                 SetStatus($"Total Duration: {stopwatch.Elapsed}");
                 uploadStopwatch.Stop();
                 stopwatch.Stop();
@@ -145,12 +152,14 @@ namespace StoneagePublisher.ViewModels
         {
             try
             {
-                using (var client = new HttpClient())
+                var httpProgressHandler = new ProgressMessageHandler(new HttpClientHandler());
+                httpProgressHandler.HttpSendProgress += HttpProgressHandlerOnHttpSendProgress;
+
+                using (var client = new HttpClient(httpProgressHandler))
                 {
                     client.BaseAddress = new Uri(Configuration.PublishWebsiteUrl);
                     client.Timeout = Timeout.InfiniteTimeSpan;
-                    client.DefaultRequestHeaders.Accept.Add(
-                        new MediaTypeWithQualityHeaderValue("application/bson"));
+                    client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/bson"));
 
                     var load = new
                     {
@@ -158,9 +167,14 @@ namespace StoneagePublisher.ViewModels
                         Bytes = bytes
                     };
 
+                    var objectBuffer = new MemoryStream();
                     MediaTypeFormatter bsonFormatter = new BsonMediaTypeFormatter();
+                    bsonFormatter.WriteToStreamAsync(load.GetType(), load, objectBuffer, null, null).Wait();
+                    objectBuffer.Seek(0, SeekOrigin.Begin);
+                    var uploadContent = new StreamContent(objectBuffer);
+                    uploadContent.Headers.ContentType = new MediaTypeHeaderValue("application/bson");
 
-                    var result = client.PostAsync(Configuration.PublishWebsitePath, load, bsonFormatter).Result;
+                    var result = client.PostAsync(Configuration.PublishWebsitePath, uploadContent).Result;
 
                     if (result != null && result.IsSuccessStatusCode)
                     {
@@ -187,6 +201,21 @@ namespace StoneagePublisher.ViewModels
             }
         }
 
+        private void HttpProgressHandlerOnHttpSendProgress(object sender, HttpProgressEventArgs e)
+        {
+            SetProgress(e.ProgressPercentage);
+            Console.WriteLine($"Percentage : {e.ProgressPercentage}, uploaded : {e.BytesTransferred / 1048576} MB, total : {e.TotalBytes / 1048576} MB");
+        }
+
+        private void SetProgress(int value)
+        {
+            Dispatcher.CurrentDispatcher.Invoke(() =>
+            {
+                Progress = value;
+                RaisePropertyChanged("Progress");
+            });
+        }
+
         public void SetStatus(string message)
         {
             Dispatcher.CurrentDispatcher.Invoke(() =>
@@ -196,8 +225,7 @@ namespace StoneagePublisher.ViewModels
             });
         }
 
-
-        static long GetDirectorySize(string path)
+        private static long GetDirectorySize(string path)
         {
             var directoryInfo = new DirectoryInfo(path);
             var infoList = directoryInfo.GetFiles("*.*", SearchOption.AllDirectories);
@@ -209,6 +237,7 @@ namespace StoneagePublisher.ViewModels
         private void RaisePropertyChanged(string PropertyName) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(PropertyName));
 
         private float GetInMb(int byteLength) => (float)byteLength / (1024 * 1024);
+
         private float GetInMb(long byteLength) => (float)byteLength / (1024 * 1024);
     }
 }
