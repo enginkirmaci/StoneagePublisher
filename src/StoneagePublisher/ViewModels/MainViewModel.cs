@@ -1,15 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Net;
 using System.Net.Http;
-using System.Net.Http.Formatting;
 using System.Net.Http.Handlers;
-using System.Net.Http.Headers;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
@@ -18,6 +13,7 @@ using StoneagePublisher.ClassLibrary;
 using StoneagePublisher.ClassLibrary.Command;
 using StoneagePublisher.ClassLibrary.Entities;
 using StoneagePublisher.ClassLibrary.Services;
+using StoneagePublisher.Logging;
 
 namespace StoneagePublisher.ViewModels
 {
@@ -54,6 +50,8 @@ namespace StoneagePublisher.ViewModels
 
         public int Progress { get; set; }
 
+        private readonly DeploymentService deploymentService;
+
         public MainViewModel()
         {
             if (DesignerProperties.GetIsInDesignMode(new DependencyObject()))
@@ -81,9 +79,13 @@ namespace StoneagePublisher.ViewModels
 
                 Profiles = Configuration.Profiles;
                 SelectedProfile = Profiles.First();
-
                 return;
             }
+
+
+            var logger = new WindowLogger(SetStatus, SetStatus, SetStatus, ShowError, null);
+            deploymentService = new DeploymentService(logger);
+            deploymentService.ProgressChanged += DeploymentProgressChanged;
 
             _canExecute = true;
             compressionService = new CompressionService();
@@ -120,88 +122,12 @@ namespace StoneagePublisher.ViewModels
             Task.Run(() =>
             {
                 SetProgress(0);
-                SetStatus("Status");
-                SetStatus($"---------------- {DateTime.Now}");
-                var rawSize = GetInMb(GetDirectorySize(folderPath));
-                SetStatus("Initial folder size: " + rawSize.ToString("F") + " mb. ");
-
-                SetStatus("Zip started.");
-                var stopwatch = new Stopwatch();
-                stopwatch.Start();
-                var bytes = compressionService.GetZippedBytes(folderPath);
-                var size = GetInMb(bytes.Length);
-                SetStatus($"Zipping Done in {stopwatch.Elapsed}, Size: {size:F} mb. ");
-
-                SetStatus("Upload started");
-                var uploadStopwatch = new Stopwatch();
-                uploadStopwatch.Start();
-
-                SetProgress(0);
-                HttpPost(SelectedProfile.RemotePublishFolder, bytes);
-
-                SetStatus($"Upload done in {uploadStopwatch.Elapsed}");
-
-                SetStatus($"Total Duration: {stopwatch.Elapsed}");
-                uploadStopwatch.Stop();
-                stopwatch.Stop();
+                deploymentService.CompressAndSend(folderPath, SelectedProfile.RemotePublishFolder);
                 _canExecute = true;
             });
         }
-
-        private void HttpPost(string webrootPath, byte[] bytes)
-        {
-            try
-            {
-                var httpProgressHandler = new ProgressMessageHandler(new HttpClientHandler());
-                httpProgressHandler.HttpSendProgress += HttpProgressHandlerOnHttpSendProgress;
-
-                using (var client = new HttpClient(httpProgressHandler))
-                {
-                    client.BaseAddress = new Uri(Configuration.PublishWebsiteUrl);
-                    client.Timeout = Timeout.InfiniteTimeSpan;
-                    client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/bson"));
-
-                    var load = new
-                    {
-                        WebRootPath = webrootPath,
-                        Bytes = bytes
-                    };
-
-                    var objectBuffer = new MemoryStream();
-                    MediaTypeFormatter bsonFormatter = new BsonMediaTypeFormatter();
-                    bsonFormatter.WriteToStreamAsync(load.GetType(), load, objectBuffer, null, null).Wait();
-                    objectBuffer.Seek(0, SeekOrigin.Begin);
-                    var uploadContent = new StreamContent(objectBuffer);
-                    uploadContent.Headers.ContentType = new MediaTypeHeaderValue("application/bson");
-
-                    var result = client.PostAsync(Configuration.PublishWebsitePath, uploadContent).Result;
-
-                    if (result != null && result.IsSuccessStatusCode)
-                    {
-                        SetStatus(Environment.NewLine + "Upload and Publish done.");
-                    }
-                    else
-                    {
-                        var resultContent = result?.Content.ReadAsStringAsync().Result;
-
-                        SetStatus(Environment.NewLine + "Upload failed.");
-                        SetStatus(Environment.NewLine + resultContent);
-                    }
-                }
-
-                SetStatus(Environment.NewLine + "Upload done.");
-            }
-            catch (WebException e)
-            {
-                MessageBox.Show(e.Message);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.Message);
-            }
-        }
-
-        private void HttpProgressHandlerOnHttpSendProgress(object sender, HttpProgressEventArgs e)
+        
+        private void DeploymentProgressChanged(HttpProgressEventArgs e)
         {
             SetProgress(e.ProgressPercentage);
             Console.WriteLine($"Percentage : {e.ProgressPercentage}, uploaded : {e.BytesTransferred / 1048576} MB, total : {e.TotalBytes / 1048576} MB");
@@ -224,6 +150,8 @@ namespace StoneagePublisher.ViewModels
                 RaisePropertyChanged("Status");
             });
         }
+
+        public void ShowError(string message) => MessageBox.Show(message);
 
         private static long GetDirectorySize(string path)
         {

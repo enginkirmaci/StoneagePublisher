@@ -9,6 +9,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StoneagePublisher", "src\St
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StoneagePublisher.Web", "src\StoneagePublisher.Web\StoneagePublisher.Web.csproj", "{B0503210-9169-4625-8239-05F3D4BEA793}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StoneagePublisher.Service", "src\StoneagePublisher.Service\StoneagePublisher.Service.csproj", "{6CBCF2DA-38D0-4B42-A720-CC8D4AB22928}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +29,10 @@ Global
 		{B0503210-9169-4625-8239-05F3D4BEA793}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B0503210-9169-4625-8239-05F3D4BEA793}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B0503210-9169-4625-8239-05F3D4BEA793}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6CBCF2DA-38D0-4B42-A720-CC8D4AB22928}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6CBCF2DA-38D0-4B42-A720-CC8D4AB22928}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6CBCF2DA-38D0-4B42-A720-CC8D4AB22928}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6CBCF2DA-38D0-4B42-A720-CC8D4AB22928}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
