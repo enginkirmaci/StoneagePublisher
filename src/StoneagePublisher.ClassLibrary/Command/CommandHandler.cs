@@ -14,12 +14,12 @@ namespace StoneagePublisher.ClassLibrary.Command
             _canExecute = canExecute;
         }
 
+        public event EventHandler CanExecuteChanged;
+
         public bool CanExecute(object parameter)
         {
             return _canExecute;
         }
-
-        public event EventHandler CanExecuteChanged;
 
         public void Execute(object parameter)
         {

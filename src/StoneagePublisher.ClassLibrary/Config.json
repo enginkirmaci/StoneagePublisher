@@ -1,5 +1,5 @@
 ﻿{
-  "IsAutoMode": true,
+  "IsAutoMode": false,
   "PublishWebsiteUrl": "http://publisher.local.reference.be",
   "PublishWebsitePath": "/api/publish/handlepublish",
   "Profiles": [
