@@ -1,9 +1,26 @@
-﻿namespace StoneagePublisher.ClassLibrary.Entities
+﻿using System;
+using System.IO;
+using Newtonsoft.Json;
+
+namespace StoneagePublisher.ClassLibrary.Entities
 {
     public class ConfigurationProvider
     {
-        public Configuration Getconfiguration() => Utils.ReadConfiguration();
+        private readonly string ConfigPath;
 
-        public event System.Action<Configuration> ConfigurationChanged;
+        public ConfigurationProvider()
+        {
+            ConfigPath = Path.Combine(Environment.CurrentDirectory, "Config.json");
+        }
+
+        public Configuration GetConfiguration()
+        {
+            return JsonConvert.DeserializeObject<Configuration>(File.ReadAllText(ConfigPath));
+        }
+
+        public void SetConfiguration(Configuration configuration)
+        {
+            File.WriteAllText(ConfigPath, JsonConvert.SerializeObject(configuration, Formatting.Indented));
+        }
     }
 }

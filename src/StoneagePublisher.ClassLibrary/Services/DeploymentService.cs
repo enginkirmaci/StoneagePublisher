@@ -18,8 +18,6 @@ namespace StoneagePublisher.ClassLibrary.Services
         private readonly ConfigurationProvider configurationProvider;
         private readonly CompressionService compressionService;
 
-        public event Action<HttpProgressEventArgs> ProgressChanged;
-
         public DeploymentService(ILogService logService)
         {
             this.logService = logService;
@@ -57,7 +55,7 @@ namespace StoneagePublisher.ClassLibrary.Services
 
         private bool DeployData(string webrootPath, byte[] bytes)
         {
-            var configuration = configurationProvider.Getconfiguration();
+            var configuration = configurationProvider.GetConfiguration();
             try
             {
                 var httpProgressHandler = new ProgressMessageHandler(new HttpClientHandler());
@@ -112,8 +110,10 @@ namespace StoneagePublisher.ClassLibrary.Services
         }
 
         private float GetInMb(int byteLength) => (float)byteLength / (1024 * 1024);
+
         private float GetInMb(long byteLength) => (float)byteLength / (1024 * 1024);
-        static long GetDirectorySize(string path)
+
+        private static long GetDirectorySize(string path)
         {
             var directoryInfo = new DirectoryInfo(path);
             var infoList = directoryInfo.GetFiles("*.*", SearchOption.AllDirectories);
@@ -122,7 +122,7 @@ namespace StoneagePublisher.ClassLibrary.Services
 
         private void HttpProgressHandlerOnHttpSendProgress(object sender, HttpProgressEventArgs e)
         {
-            ProgressChanged?.Invoke(e);
+            logService.Progress(e.ProgressPercentage);
         }
     }
 }

@@ -10,14 +10,22 @@ namespace StoneagePublisher.Logging
         private readonly Action<string> logWarn;
         private readonly Action<string> logError;
         private readonly Action<string, Exception> logErrorException;
+        private readonly Action<int> progress;
 
-        public WindowLogger(Action<string> logInfo, Action<string> logDebug, Action<string> logWarn, Action<string> logError, Action<string, Exception> logErrorException)
+        public WindowLogger(
+            Action<string> logInfo,
+            Action<string> logDebug,
+            Action<string> logWarn,
+            Action<string> logError,
+            Action<string, Exception> logErrorException,
+            Action<int> progress)
         {
             this.logInfo = logInfo;
             this.logDebug = logDebug;
             this.logWarn = logWarn;
             this.logError = logError;
             this.logErrorException = logErrorException;
+            this.progress = progress;
         }
 
         public void Info(string message)
@@ -43,6 +51,11 @@ namespace StoneagePublisher.Logging
         public void Error(string message, Exception exception)
         {
             logErrorException?.Invoke(message, exception);
+        }
+
+        public void Progress(int percentage)
+        {
+            progress?.Invoke(percentage);
         }
     }
 }

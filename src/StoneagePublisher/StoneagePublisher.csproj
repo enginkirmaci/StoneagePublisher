@@ -98,6 +98,7 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="Converters\BooleanToVisibilityConverter.cs" />
     <Compile Include="Logging\WindowLogger.cs" />
     <Compile Include="ViewModels\MainViewModel.cs" />
     <Page Include="MainWindow.xaml">
@@ -158,6 +159,10 @@
     <ProjectReference Include="..\StoneagePublisher.ClassLibrary\StoneagePublisher.ClassLibrary.csproj">
       <Project>{D56F59FF-0BE3-44E7-8E49-3ABB913D78E4}</Project>
       <Name>StoneagePublisher.ClassLibrary</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\StoneagePublisher.Service\StoneagePublisher.Service.csproj">
+      <Project>{6CBCF2DA-38D0-4B42-A720-CC8D4AB22928}</Project>
+      <Name>StoneagePublisher.Service</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

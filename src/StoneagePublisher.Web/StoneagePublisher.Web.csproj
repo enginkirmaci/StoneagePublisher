@@ -57,6 +57,14 @@
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
     <Compile Include="Models\Publish\PublishRequestModel.cs" />
+    <Compile Include="Core\IpAddressExtensions.cs" />
+    <Compile Include="Modules\IpFilter\Configuration\ConfigurationProvider.cs" />
+    <Compile Include="Modules\IpFilter\Configuration\Data\HostsDefinition.cs" />
+    <Compile Include="Modules\IpFilter\Configuration\Data\IpDefinition.cs" />
+    <Compile Include="Modules\IpFilter\Configuration\Data\SubnetDefinition.cs" />
+    <Compile Include="Modules\IpFilter\Configuration\NetworkDefinition.cs" />
+    <Compile Include="Modules\IpFilter\Configuration\WhitelistConfiguration.cs" />
+    <Compile Include="Modules\IpFilter\IpFilterModule.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -82,6 +90,7 @@
   <ItemGroup>
     <Content Include="App_Config\AppSettings.config" />
     <Content Include="packages.config" />
+    <Content Include="AllowedIps.json" />
     <None Include="Properties\PublishProfiles\Local.pubxml" />
   </ItemGroup>
   <ItemGroup>

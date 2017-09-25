@@ -1,30 +1,38 @@
 ﻿using System;
-using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
-using System.Net.Http.Handlers;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Threading;
-using StoneagePublisher.ClassLibrary;
 using StoneagePublisher.ClassLibrary.Command;
 using StoneagePublisher.ClassLibrary.Entities;
 using StoneagePublisher.ClassLibrary.Services;
 using StoneagePublisher.Logging;
+using StoneagePublisher.Service.Watcher;
 
 namespace StoneagePublisher.ViewModels
 {
     public class MainViewModel : INotifyPropertyChanged
     {
+        private readonly DeploymentService deploymentService;
+        private readonly WindowLogger windowLogger;
         private readonly CompressionService compressionService;
+        private readonly ConfigurationProvider configurationProvider;
+
+        private PublishWatcher publishWatcher;
         private Profile _selectedProfile;
+        private ICommand _zipSendCommand;
+        private ICommand _autoModeCommand;
+        private ICommand _saveCommand;
+        private ICommand _newProfileCommand;
 
         public Profile SelectedProfile
         {
-            get { return _selectedProfile; }
+            get { return _selectedProfile == null ? Configuration.Profiles.First() : _selectedProfile; }
             set
             {
                 _selectedProfile = value;
@@ -33,34 +41,57 @@ namespace StoneagePublisher.ViewModels
         }
 
         public Configuration Configuration { get; set; }
-
-        public IList<Profile> Profiles { get; set; }
         public string Status { get; set; }
-        private ICommand _zipSendCommand;
-
-        public ICommand ZipSendCommand
-        {
-            get
-            {
-                return _zipSendCommand ?? (_zipSendCommand = new CommandHandler(() => ZipSend(), _canExecute));
-            }
-        }
-
-        private bool _canExecute;
-
+        public bool IsAutoMode { get; set; }
         public int Progress { get; set; }
 
-        private readonly DeploymentService deploymentService;
+        public ICommand ZipSendCommand => _zipSendCommand ?? (_zipSendCommand = new CommandHandler(() =>
+        {
+            var folderPath = SelectedProfile.LocalPublishFolder;
+            Status = string.Empty;
+
+            Task.Run(() =>
+            {
+                SetProgress(0);
+                deploymentService.CompressAndSend(folderPath, SelectedProfile.RemotePublishFolder);
+            });
+        }, true));
+
+        public ICommand AutoModeCommand => _autoModeCommand ?? (_autoModeCommand = new CommandHandler(() =>
+        {
+            IsAutoMode = IsAutoMode ? false : true;
+            InitializeWatcher();
+            Status = string.Empty;
+            RaisePropertyChanged("Status");
+            RaisePropertyChanged("IsAutoMode");
+        }, true));
+
+        public ICommand SaveCommand => _saveCommand ?? (_saveCommand = new CommandHandler(() =>
+        {
+            Configuration.IsAutoMode = IsAutoMode;
+            configurationProvider.SetConfiguration(Configuration);
+        }, true));
+
+        public ICommand NewProfileCommand => _newProfileCommand ?? (_newProfileCommand = new CommandHandler(() =>
+        {
+            if (Configuration.Profiles.Any(i => i.Name == string.Empty))
+                return;
+
+            var newProfile = new Profile() { Name = string.Empty };
+            Configuration.Profiles.Add(newProfile);
+            SelectedProfile = newProfile;
+        }, true));
 
         public MainViewModel()
         {
             if (DesignerProperties.GetIsInDesignMode(new DependencyObject()))
             {
+                IsAutoMode = false;
                 Status = "Status";
                 Progress = 35;
                 Configuration = new Configuration()
                 {
-                    Profiles = new List<Profile>()
+                    Profiles = new ObservableCollection<Profile>()
                     {
                         new Profile()
                         {
@@ -77,23 +108,37 @@ namespace StoneagePublisher.ViewModels
                     }
                 };
 
-                Profiles = Configuration.Profiles;
-                SelectedProfile = Profiles.First();
                 return;
             }
 
-
-            var logger = new WindowLogger(SetStatus, SetStatus, SetStatus, ShowError, null);
-            deploymentService = new DeploymentService(logger);
-            deploymentService.ProgressChanged += DeploymentProgressChanged;
-
-            _canExecute = true;
+            windowLogger = new WindowLogger(SetStatus, SetStatus, SetStatus, ShowError, null, SetProgress);
+            deploymentService = new DeploymentService(windowLogger);
             compressionService = new CompressionService();
-            Configuration = Utils.ReadConfiguration();
-            Profiles = Configuration.Profiles;
-            SelectedProfile = Profiles.First();
+            configurationProvider = new ConfigurationProvider();
 
+            Configuration = configurationProvider.GetConfiguration();
+            IsAutoMode = Configuration.IsAutoMode;
+
+            InitializeWatcher();
             Task.Run((Action)CheckHealth);
+        }
+
+        private void InitializeWatcher()
+        {
+            if (IsAutoMode)
+            {
+                Task.Run(() =>
+                {
+                    windowLogger.Info("Initialiazing watcher");
+                    publishWatcher = new PublishWatcher(windowLogger);
+                    publishWatcher.Initialize();
+                });
+            }
+            else if (publishWatcher != null)
+            {
+                publishWatcher.Dispose();
+                publishWatcher = null;
+            }
         }
 
         private void CheckHealth()
@@ -111,26 +156,6 @@ namespace StoneagePublisher.ViewModels
             {
                 SetStatus(FormattableString.Invariant($"Health check failed : {e.Message}"));
             }
-        }
-
-        private void ZipSend()
-        {
-            _canExecute = false;
-            var folderPath = SelectedProfile.LocalPublishFolder;
-            Status = string.Empty;
-
-            Task.Run(() =>
-            {
-                SetProgress(0);
-                deploymentService.CompressAndSend(folderPath, SelectedProfile.RemotePublishFolder);
-                _canExecute = true;
-            });
-        }
-        
-        private void DeploymentProgressChanged(HttpProgressEventArgs e)
-        {
-            SetProgress(e.ProgressPercentage);
-            Console.WriteLine($"Percentage : {e.ProgressPercentage}, uploaded : {e.BytesTransferred / 1048576} MB, total : {e.TotalBytes / 1048576} MB");
         }
 
         private void SetProgress(int value)
@@ -163,9 +188,5 @@ namespace StoneagePublisher.ViewModels
         public event PropertyChangedEventHandler PropertyChanged;
 
         private void RaisePropertyChanged(string PropertyName) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(PropertyName));
-
-        private float GetInMb(int byteLength) => (float)byteLength / (1024 * 1024);
-
-        private float GetInMb(long byteLength) => (float)byteLength / (1024 * 1024);
     }
 }
