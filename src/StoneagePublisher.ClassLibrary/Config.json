@@ -1,7 +1,12 @@
 ﻿{
-  "PublishWebsiteUrl": "http://publisher.local.reference.be",
+  "PublishWebsiteUrl": "http://remote.stoneagepublisher.reference.be",
   "PublishWebsitePath": "/api/publish/handlepublish",
   "Profiles": [
+    {
+      "Name": "Ansell",
+      "LocalPublishFolder": "D:\\Projects\\Ansell\\Deployment",
+      "RemotePublishFolder": "Ansell\\Website"
+    },
     {
       "Name": "Test",
       "LocalPublishFolder": "D:\\tmp\\Test",
